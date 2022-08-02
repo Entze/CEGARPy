@@ -1,0 +1,10 @@
+name: CEGARPy
+channels:
+  - conda-forge
+  - anaconda
+dependencies:
+  - python>=3.10,<4
+  - mypy>=0.950,<1
+  - pylint>=2.14,<3
+  - pydantic>=1.9,<2
+  - coverage>=6.4,<7
