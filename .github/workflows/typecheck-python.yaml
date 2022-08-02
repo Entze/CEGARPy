@@ -1,0 +1,27 @@
+name: "Typecheck"
+on: [push]
+jobs:
+  mypy:
+    name: "mypy"
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v2
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{hashFiles('environment.yml') }}
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: CEGARPy
+          channel-priority: strict
+          environment-file: environment.yml
+      - run: conda info
+      - run: mypy --config-file pyproject.toml -p cegarpy
