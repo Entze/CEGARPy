@@ -5,7 +5,7 @@ from pydantic.dataclasses import dataclass
 
 from cegarpy.atom import Atom
 
-_Formula: TypeAlias = "Formula"
+_Formula: TypeAlias = 'Formula'
 
 
 @dataclass(frozen=True)
