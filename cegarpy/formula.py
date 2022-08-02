@@ -31,6 +31,7 @@ class Formula:
 @dataclass(frozen=True)
 class NonaryFormula(Formula):
 
+    @property
     def precedence(self) -> float:
         return float('inf')
 
@@ -50,7 +51,7 @@ class Literal(NonaryFormula):
 
     def __str__(self) -> str:
         if self.sign is False:
-            return "¬{}".format(self.atom)
+            return f"¬{self.atom}"
         return str(self.atom)
 
 
@@ -82,8 +83,8 @@ class UnaryFormula(Formula):
 
     def __str__(self) -> str:
         if self.precedence > self.formula.precedence:
-            return "{}({})".format(self.connective_symbol, self.formula)
-        return "{}{}".format(self.connective_symbol, self.formula)
+            return f"{self.connective_symbol}({self.formula})"
+        return f"{self.connective_symbol}{self.formula}"
 
 
 @dataclass(frozen=True)
@@ -95,7 +96,7 @@ class Negation(UnaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super(Negation, self).precedence + 3
+        return super().precedence + 3
 
     @property
     def connective_symbol(self) -> str:
@@ -107,7 +108,7 @@ class Box(UnaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super(Box, self).precedence + 2
+        return super().precedence + 2
 
     @property
     def connective_symbol(self) -> str:
@@ -119,7 +120,7 @@ class Dia(UnaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super(Dia, self).precedence + 1
+        return super().precedence + 1
 
     @property
     def connective_symbol(self) -> str:
@@ -141,15 +142,15 @@ class BinaryFormula(Formula):
 
     def __str__(self) -> str:
         if self.precedence > self.left.precedence:
-            left: str = "({})".format(self.left)
+            left: str = f"({self.left})"
         else:
             left = str(self.left)
         if self.precedence > self.right.precedence:
-            right: str = "({})".format(self.right)
+            right: str = f"({self.right})"
         else:
             right = str(self.right)
 
-        return "{} {} {}".format(left, self.connective_symbol, right)
+        return f"{left} {self.connective_symbol} {right}"
 
 
 @dataclass(frozen=True, order=True)
@@ -157,7 +158,7 @@ class Conjunction(BinaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super(Conjunction, self).precedence + 4
+        return super().precedence + 4
 
     @property
     def connective_symbol(self) -> str:
@@ -169,7 +170,7 @@ class Disjunction(BinaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super(Disjunction, self).precedence + 3
+        return super().precedence + 3
 
     @property
     def connective_symbol(self) -> str:
@@ -185,7 +186,7 @@ class Implication(BinaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super(Implication, self).precedence + 2
+        return super().precedence + 2
 
     @property
     def connective_symbol(self) -> str:
@@ -201,7 +202,7 @@ class Equivalence(BinaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super(Equivalence, self).precedence + 1
+        return super().precedence + 1
 
     @property
     def connective_symbol(self) -> str:
