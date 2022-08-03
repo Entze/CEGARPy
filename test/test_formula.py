@@ -77,11 +77,9 @@ class TestIsNNF(unittest.TestCase):
         self.assertEqual(expected, actual)
 
 
-
 class TestStr(unittest.TestCase):
 
     def test_atomic_formula(self):
-
         p = Atom('p')
         a = AtomicFormula(p)
 
@@ -91,7 +89,6 @@ class TestStr(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_compound(self):
-
         bot = Bot()
         top = Top()
 
@@ -104,9 +101,9 @@ class TestStr(unittest.TestCase):
         sf1 = Implication(Box(p), Box(Box(p)))
         sf2 = Equivalence(Dia(q), Negation(Box(Negation(q))))
         sf3 = Equivalence(Negation(top), bot)
-        sf4 = Equivalence(Equivalence(p,q), Conjunction(Implication(p, q), Implication(q, p)))
+        sf4 = Equivalence(Equivalence(p, q), Conjunction(Implication(p, q), Implication(q, p)))
         sf5 = Equivalence(top, Negation(bot))
-        sf6 = Implication(Conjunction(-p, -q), Disjunction(-p,-q))
+        sf6 = Implication(Conjunction(-p, -q), Disjunction(-p, -q))
 
         f = Conjunction(sf1, Conjunction(sf2, Conjunction(sf3, Conjunction(sf4, Conjunction(sf5, sf6)))))
 
@@ -114,6 +111,3 @@ class TestStr(unittest.TestCase):
         actual = str(f)
 
         self.assertEqual(expected, actual)
-
-
-
