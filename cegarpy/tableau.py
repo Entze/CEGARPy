@@ -16,11 +16,11 @@ Closed: Literal['Closed'] = 'Closed'
 _LocalNode: TypeAlias = 'LocalNode'
 
 
-class __ValuationConfig:
+class ValuationConfig:
     arbitrary_types_allowed = True
 
 
-@dataclass(config=__ValuationConfig)
+@dataclass(config=ValuationConfig)
 class JumpRestartNode:
     assumptions: Valuation = Field(default_factory=MutableValuation)
     valuation: Valuation = Field(default_factory=MutableValuation)
@@ -121,7 +121,7 @@ class JumpRestartNode:
             self.jump()
 
 
-@dataclass(config=__ValuationConfig)
+@dataclass(config=ValuationConfig)
 class LocalNode:
     assumptions: Valuation = Field(default=MutableValuation)
     clauses: ConjunctiveClause = Field(default_factory=ConjunctiveClause)
@@ -160,7 +160,7 @@ class LocalNode:
         assert self.status == Closed or self.child is not None
 
 
-@dataclass(config=__ValuationConfig)
+@dataclass(config=ValuationConfig)
 class ModalTableau:
     classic_formulae: ConjunctiveClause = Field(default_factory=ConjunctiveClause)
     modal_formulae: BoxChain = Field(default_factory=BoxChain)
