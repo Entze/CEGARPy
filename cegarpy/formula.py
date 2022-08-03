@@ -16,6 +16,14 @@ class Valuation:
     def alphabet(self) -> Iterator[Atom]:
         raise NotImplementedError
 
+    @property
+    def true_atoms(self) -> Iterator:
+        return (atom for atom in self.alphabet if self.assignment(atom))
+
+    @property
+    def false_atoms(self) -> Iterator:
+        return (atom for atom in self.alphabet if not self.assignment(atom))
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, Valuation):
             return False
@@ -464,6 +472,9 @@ class SeqFormula(Formula):
         raise NotImplementedError
 
 
+_BoxChain: TypeAlias = 'BoxChain'
+
+
 @dataclass(frozen=True, eq=True)
 class BoxChain(SeqFormula):
 
@@ -473,3 +484,6 @@ class BoxChain(SeqFormula):
 
     def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
         raise TypeError("BoxChain Formulae cannot be evaluated")
+
+    def pull_up(self) -> _BoxChain:
+        return BoxChain(self.formula_sequence[1:])
