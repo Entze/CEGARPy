@@ -9,3 +9,4 @@ dependencies:
   - pydantic>=1.9,<2
   - coverage>=6.4,<7
   - frozendict>=2.3,<3
+  - more-itertools>=8.13,<9

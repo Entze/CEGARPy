@@ -1,10 +1,96 @@
-from typing import TypeAlias, Set, Any, FrozenSet, Sequence, Optional, Mapping, MutableMapping, Iterator
+from typing import TypeAlias, Set, Any, FrozenSet, Sequence, Optional, Mapping, MutableMapping, Iterator, Iterable
 
+import more_itertools
 from frozendict import frozendict  # type: ignore
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 
 from cegarpy.atom import Atom
+
+_Valuation: TypeAlias = 'Valuation'
+
+
+class Valuation:
+
+    @property
+    def alphabet(self) -> Iterator[Atom]:
+        raise NotImplementedError
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Valuation):
+            return False
+        return set(self.alphabet) == set(other.alphabet) and all(
+            self.assignment(atom) == other.assignment(atom) for atom in self.alphabet)
+
+    def __lt__(self, other) -> bool:
+        if not isinstance(other, Valuation):
+            return False
+        return set(self.alphabet) < set(other.alphabet) and all(
+            self.assignment(atom) == other.assignment(atom) for atom in self.alphabet)
+
+    def __le__(self, other) -> bool:
+        if not isinstance(other, Valuation):
+            return False
+        return set(self.alphabet) <= set(other.alphabet) and all(
+            self.assignment(atom) == other.assignment(atom) for atom in self.alphabet)
+
+    def __gt__(self, other) -> bool:
+        if not isinstance(other, Valuation):
+            return False
+        return set(self.alphabet) > set(other.alphabet) and all(
+            self.assignment(atom) == other.assignment(atom) for atom in other.alphabet)
+
+    def __ge__(self, other) -> bool:
+        if not isinstance(other, Valuation):
+            return False
+        return set(self.alphabet) >= set(other.alphabet) and all(
+            self.assignment(atom) == other.assignment(atom) for atom in other.alphabet)
+
+    def assignment(self, atom: Atom) -> bool:
+        raise NotImplementedError
+
+    @classmethod
+    def from_atoms(cls, atoms: Iterable[Atom]) -> _Valuation:
+        raise NotImplementedError
+
+
+_FrozenValuation: TypeAlias = 'FrozenValuation'
+
+
+@dataclass(frozen=True)
+class FrozenValuation(Valuation):
+    mapping: Mapping[Atom, bool] = Field(default_factory=frozendict)
+
+    @property
+    def alphabet(self) -> Iterator[Atom]:
+        return iter(self.mapping.keys())
+
+    def assignment(self, atom: Atom) -> bool:
+        return self.mapping.get(atom, False)
+
+    @classmethod
+    def from_atoms(cls, atoms: Iterable[Atom]) -> _FrozenValuation:
+        return FrozenValuation(frozendict({atom: True for atom in atoms}))
+
+
+_MutableValuation: TypeAlias = 'MutableValuation'
+
+
+@dataclass
+class MutableValuation(Valuation):
+    mapping: MutableMapping[Atom, bool] = Field(default_factory=dict)
+
+    @property
+    def alphabet(self) -> Iterator[Atom]:
+        return iter(self.mapping.keys())
+
+    def assignment(self, atom: Atom) -> bool:
+        return self.mapping.get(atom, False)
+
+    @classmethod
+    def from_atoms(cls, atoms: Iterable[Atom]) -> _MutableValuation:
+        return MutableValuation({atom: True for atom in atoms})
+
 
 _Formula: TypeAlias = 'Formula'
 
@@ -28,6 +114,10 @@ class Formula:
     def connective_symbol(self) -> str:
         return NotImplemented
 
+    @property
+    def atoms(self) -> Set[Atom]:
+        return {atom for isf in self.immediate_subformulae for atom in isf.atoms}
+
     def __lt__(self, other: Any) -> bool:
         if not isinstance(other, Formula):
             raise TypeError(f"Cannot compare Formula to type {type(other).__name__}")
@@ -45,6 +135,25 @@ class Formula:
         raise NotImplementedError
 
 
+def all_valuations(formula: Formula,
+                   alphabet: Optional[Set[Atom]] = None,
+                   valuation: Optional[Valuation] = None) -> Iterator[Valuation]:
+    if alphabet is None:
+        alphabet = formula.atoms
+    if valuation is None:
+        free_atoms = alphabet
+    else:
+        free_atoms = alphabet - set(valuation.alphabet)
+    for true_atoms in more_itertools.powerset(free_atoms):
+        yield FrozenValuation.from_atoms(true_atoms)
+
+
+def models(formula: Formula,
+           alphabet: Optional[Set[Atom]] = None,
+           valuation: Optional[Valuation] = None) -> Iterator[Valuation]:
+    return (val for val in all_valuations(formula, alphabet, valuation) if formula.evaluate(val))
+
+
 @dataclass(frozen=True, eq=True)
 class NonaryFormula(Formula):
 
@@ -59,6 +168,10 @@ class NonaryFormula(Formula):
 @dataclass(frozen=True, eq=True)
 class AtomicFormula(NonaryFormula):
     atom: Atom
+
+    @property
+    def atoms(self) -> Set[Atom]:
+        return {self.atom}
 
     def __str__(self) -> str:
         return str(self.atom)
@@ -76,6 +189,10 @@ _Literal: TypeAlias = 'Literal'
 class Literal(NonaryFormula):
     atom: Atom
     sign: bool = Field(default=True)
+
+    @property
+    def atoms(self) -> Set[Atom]:
+        return {self.atom}
 
     def __str__(self) -> str:
         if self.sign is False:
@@ -356,29 +473,3 @@ class BoxChain(SeqFormula):
 
     def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
         raise TypeError("BoxChain Formulae cannot be evaluated")
-
-
-class Valuation:
-
-    def assignment(self, atom: Atom) -> bool:
-        raise NotImplementedError
-
-
-@dataclass(frozen=True)
-class FrozenValuation(Valuation):
-    mapping: Mapping[Atom, bool] = Field(default_factory=frozendict)
-
-    def assignment(self, atom: Atom) -> bool:
-        return self.mapping.get(atom, False)
-
-
-@dataclass
-class MutableValuation(Valuation):
-    mapping: MutableMapping[Atom, bool] = Field(default_factory=dict)
-
-    def assignment(self, atom: Atom) -> bool:
-        return self.mapping.get(atom, False)
-
-
-def models(formula: Formula, valuation: Optional[Valuation] = None) -> Iterator[Valuation]:
-    raise NotImplementedError

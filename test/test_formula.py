@@ -3,7 +3,7 @@ import unittest
 
 from cegarpy.atom import Atom
 from cegarpy.formula import Literal, AtomicFormula, Negation, Implication, Conjunction, Equivalence, Bot, Top, Box, Dia, \
-    Disjunction
+    Disjunction, FrozenValuation, models
 
 
 class TestIsNNF(unittest.TestCase):
@@ -111,3 +111,44 @@ class TestStr(unittest.TestCase):
         actual = str(f)
 
         self.assertEqual(expected, actual)
+
+
+class TestModels(unittest.TestCase):
+
+    def test_literal(self):
+        p = Atom('p')
+        l = Literal(p)
+
+        expected = {FrozenValuation.from_atoms({p})}
+        actual = set(models(l))
+
+        self.assertSetEqual(expected, actual)
+
+    def test_conjunction(self):
+        p = Atom('p')
+        q = Atom('q')
+
+        l = Literal(p)
+        m = Literal(q)
+
+        c = Conjunction(l, m)
+
+        expected = {FrozenValuation.from_atoms({p, q})}
+        actual = set(models(c))
+
+        self.assertSetEqual(expected, actual)
+
+    def test_disjunction(self):
+        p = Atom('p')
+        q = Atom('q')
+
+        l = Literal(p)
+        m = Literal(q)
+
+        d = Disjunction(l, m)
+
+        expected = {FrozenValuation.from_atoms({p}), FrozenValuation.from_atoms({q}),
+                    FrozenValuation.from_atoms({p, q})}
+        actual = set(models(d))
+
+        self.assertSetEqual(expected, actual)
