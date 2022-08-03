@@ -34,9 +34,10 @@ class JumpRestartNode:
     expanded_dia_implications: MutableSequence[Implication] = Field(default_factory=list)
 
     def jump(self) -> None:
+        assert self.jump_nodes is not None
         dia_implication = next((d for d in self.dia_implications if
                                 d not in self.expanded_dia_implications and d.left.evaluate(self.valuation)), None)
-        if dia_implication is None and not self.modal_box_chain.formula_sequence:
+        if dia_implication is None:
             self.status = Open  # TODO: Is this right?
             return
         self.expanded_dia_implications.append(dia_implication)
@@ -138,6 +139,7 @@ class LocalNode:
             self.status = Closed
 
     def __create_child(self) -> None:
+        assert self.model is not None
         self.child = JumpRestartNode(
             assumptions=self.assumptions,
             valuation=self.model,
@@ -192,6 +194,9 @@ class ModalTableau:
                 clauses=self.classic_formulae)
 
     def solve(self) -> bool:
+        if self.tableau_root is None:
+            self.initialize()
+        assert self.tableau_root is not None
         while self.tableau_root.status is None:
             self.tableau_root.expand()
         return self.tableau_root.status == Open

@@ -24,31 +24,31 @@ class Valuation:
     def false_atoms(self) -> Iterator:
         return (atom for atom in self.alphabet if not self.assignment(atom))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Valuation):
             return False
         return set(self.alphabet) == set(other.alphabet) and all(
             self.assignment(atom) == other.assignment(atom) for atom in self.alphabet)
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: Any) -> bool:
         if not isinstance(other, Valuation):
             return False
         return set(self.alphabet) < set(other.alphabet) and all(
             self.assignment(atom) == other.assignment(atom) for atom in self.alphabet)
 
-    def __le__(self, other) -> bool:
+    def __le__(self, other: Any) -> bool:
         if not isinstance(other, Valuation):
             return False
         return set(self.alphabet) <= set(other.alphabet) and all(
             self.assignment(atom) == other.assignment(atom) for atom in self.alphabet)
 
-    def __gt__(self, other) -> bool:
+    def __gt__(self, other: Any) -> bool:
         if not isinstance(other, Valuation):
             return False
         return set(self.alphabet) > set(other.alphabet) and all(
             self.assignment(atom) == other.assignment(atom) for atom in other.alphabet)
 
-    def __ge__(self, other) -> bool:
+    def __ge__(self, other: Any) -> bool:
         if not isinstance(other, Valuation):
             return False
         return set(self.alphabet) >= set(other.alphabet) and all(
