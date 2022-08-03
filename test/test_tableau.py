@@ -24,11 +24,12 @@ class TestInitialize(unittest.TestCase):
         c1 = Literal(c1_)
 
         classical_formulae = ConjunctiveClause(frozenset({
-            a1,a2,c1
+            a1, a2, c1
         }))
         modal_formuluae = BoxChain(
             (
-                ConjunctiveClause(frozenset({Implication(a1, Box(b1)), Implication(a2, Box(p)), Implication(c1, Dia(-q))})),
+                ConjunctiveClause(
+                    frozenset({Implication(a1, Box(b1)), Implication(a2, Box(p)), Implication(c1, Dia(-q))})),
                 ConjunctiveClause(frozenset({Implication(b1, Disjunction(-p, q))}))
             )
         )
@@ -36,6 +37,7 @@ class TestInitialize(unittest.TestCase):
         m = ModalTableau(classical_formulae, modal_formuluae)
 
         m.initialize()
+
 
 class TestSolve(unittest.TestCase):
 
@@ -55,11 +57,12 @@ class TestSolve(unittest.TestCase):
         c1 = Literal(c1_)
 
         classical_formulae = ConjunctiveClause(frozenset({
-            a1,a2,c1
+            a1, a2, c1
         }))
         modal_formuluae = BoxChain(
             (
-                ConjunctiveClause(frozenset({Implication(a1, Box(b1)), Implication(a2, Box(p)), Implication(c1, Dia(-q))})),
+                ConjunctiveClause(
+                    frozenset({Implication(a1, Box(b1)), Implication(a2, Box(p)), Implication(c1, Dia(-q))})),
                 ConjunctiveClause(frozenset({Implication(b1, Disjunction(-p, q))}))
             )
         )
