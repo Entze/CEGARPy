@@ -25,7 +25,7 @@ class Formula:
 
     @property
     def connective_symbol(self) -> str:
-        return ""
+        return NotImplemented
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ class NonaryFormula(Formula):
 
     @property
     def precedence(self) -> float:
-        return float('inf')
+        return 30
 
 
 @dataclass(frozen=True, order=True)
@@ -42,6 +42,9 @@ class AtomicFormula(NonaryFormula):
 
     def __str__(self) -> str:
         return str(self.atom)
+
+
+_Literal: TypeAlias = 'Literal'
 
 
 @dataclass(frozen=True)
@@ -54,9 +57,16 @@ class Literal(NonaryFormula):
             return f"¬{self.atom}"
         return str(self.atom)
 
+    def __neg__(self) -> _Literal:
+        return Literal(self.atom, not self.sign)
+
 
 @dataclass(frozen=True)
 class Bot(NonaryFormula):
+
+    @property
+    def precedence(self) -> float:
+        return float('inf')
 
     def __str__(self) -> str:
         return '⊥'
@@ -64,6 +74,10 @@ class Bot(NonaryFormula):
 
 @dataclass(frozen=True)
 class Top(Formula):
+
+    @property
+    def precedence(self) -> float:
+        return float('inf')
 
     def __str__(self) -> str:
         return '⊤'
@@ -96,7 +110,7 @@ class Negation(UnaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super().precedence + 3
+        return super().precedence
 
     @property
     def connective_symbol(self) -> str:
@@ -108,7 +122,7 @@ class Box(UnaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super().precedence + 2
+        return super().precedence
 
     @property
     def connective_symbol(self) -> str:
@@ -120,7 +134,7 @@ class Dia(UnaryFormula):
 
     @property
     def precedence(self) -> float:
-        return super().precedence + 1
+        return super().precedence
 
     @property
     def connective_symbol(self) -> str:
