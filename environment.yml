@@ -8,3 +8,4 @@ dependencies:
   - pylint>=2.14,<3
   - pydantic>=1.9,<2
   - coverage>=6.4,<7
+  - frozendict>=2.3,<3

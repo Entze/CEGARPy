@@ -1,5 +1,6 @@
-from typing import TypeAlias, Set, Any
+from typing import TypeAlias, Set, Any, FrozenSet, Sequence, Optional, Mapping, MutableMapping, Iterator
 
+from frozendict import frozendict  # type: ignore
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 
@@ -37,6 +38,12 @@ class Formula:
             raise TypeError(f"Cannot compare Formula to type {type(other).__name__}")
         return self.precedence > other.precedence
 
+    def __call__(self, *args: Any, valuation: Optional[Valuation] = None, **kwargs: Any) -> bool:
+        return self.evaluate(valuation)
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise NotImplementedError
+
 
 @dataclass(frozen=True, eq=True)
 class NonaryFormula(Formula):
@@ -45,6 +52,9 @@ class NonaryFormula(Formula):
     def precedence(self) -> float:
         return 30
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise NotImplementedError
+
 
 @dataclass(frozen=True, eq=True)
 class AtomicFormula(NonaryFormula):
@@ -52,6 +62,11 @@ class AtomicFormula(NonaryFormula):
 
     def __str__(self) -> str:
         return str(self.atom)
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        if valuation is None:
+            return False
+        return valuation.assignment(self.atom)
 
 
 _Literal: TypeAlias = 'Literal'
@@ -70,6 +85,11 @@ class Literal(NonaryFormula):
     def __neg__(self) -> _Literal:
         return Literal(self.atom, not self.sign)
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        if valuation is None:
+            return not self.sign
+        return bool(valuation.assignment(self.atom) ^ (not self.sign))
+
 
 @dataclass(frozen=True, eq=True)
 class Bot(NonaryFormula):
@@ -81,6 +101,9 @@ class Bot(NonaryFormula):
     def __str__(self) -> str:
         return '⊥'
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return False
+
 
 @dataclass(frozen=True, eq=True)
 class Top(Formula):
@@ -91,6 +114,9 @@ class Top(Formula):
 
     def __str__(self) -> str:
         return '⊤'
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return False
 
 
 @dataclass(frozen=True, eq=True)
@@ -110,6 +136,9 @@ class UnaryFormula(Formula):
             return f"{self.connective_symbol}({self.formula})"
         return f"{self.connective_symbol}{self.formula}"
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise NotImplementedError
+
 
 @dataclass(frozen=True, eq=True)
 class Negation(UnaryFormula):
@@ -126,6 +155,9 @@ class Negation(UnaryFormula):
     def connective_symbol(self) -> str:
         return '¬'
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return not self.formula.evaluate(valuation)
+
 
 @dataclass(frozen=True, eq=True)
 class Box(UnaryFormula):
@@ -138,6 +170,9 @@ class Box(UnaryFormula):
     def connective_symbol(self) -> str:
         return '□'
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise TypeError("Box Formulae cannot be evaluated")
+
 
 @dataclass(frozen=True, eq=True)
 class Dia(UnaryFormula):
@@ -149,6 +184,9 @@ class Dia(UnaryFormula):
     @property
     def connective_symbol(self) -> str:
         return '⋄'
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise TypeError("Dia Formulae cannot be evaluated")
 
 
 @dataclass(frozen=True, eq=True)
@@ -176,6 +214,9 @@ class BinaryFormula(Formula):
 
         return f"{left} {self.connective_symbol} {right}"
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise NotImplementedError
+
 
 @dataclass(frozen=True, eq=True)
 class Conjunction(BinaryFormula):
@@ -188,6 +229,9 @@ class Conjunction(BinaryFormula):
     def connective_symbol(self) -> str:
         return '⋀'
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return self.left.evaluate(valuation) and self.right.evaluate(valuation)
+
 
 @dataclass(frozen=True, eq=True)
 class Disjunction(BinaryFormula):
@@ -199,6 +243,9 @@ class Disjunction(BinaryFormula):
     @property
     def connective_symbol(self) -> str:
         return '⋁'
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return self.left.evaluate(valuation) or self.right.evaluate(valuation)
 
 
 @dataclass(frozen=True, eq=True)
@@ -216,6 +263,9 @@ class Implication(BinaryFormula):
     def connective_symbol(self) -> str:
         return '→'
 
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return (not self.left.evaluate(valuation)) or self.right.evaluate(valuation)
+
 
 @dataclass(frozen=True, eq=True)
 class Equivalence(BinaryFormula):
@@ -231,3 +281,104 @@ class Equivalence(BinaryFormula):
     @property
     def connective_symbol(self) -> str:
         return '≡'
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return self.left.evaluate(valuation) == self.right.evaluate(valuation)
+
+
+@dataclass(frozen=True, eq=True)
+class NAryFormula(Formula):
+    formulae: FrozenSet[Formula] = Field(default_factory=frozenset)
+
+    @property
+    def immediate_subformulae(self) -> Set[_Formula]:
+        return set(self.formulae)
+
+    @property
+    def precedence(self) -> float:
+        return 50
+
+    def __str__(self) -> str:
+        return f"{self.connective_symbol}{'{'}{','.join(str(formula) for formula in self.formulae)}{'}'}"
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise NotImplementedError
+
+
+@dataclass(frozen=True, eq=True)
+class Clause(NAryFormula):
+
+    @property
+    def connective_symbol(self) -> str:
+        return '⋁'
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return any(formula.evaluate(valuation) for formula in self.formulae)
+
+
+@dataclass(frozen=True, eq=True)
+class ConjunctiveClause(NAryFormula):
+
+    @property
+    def connective_symbol(self) -> str:
+        return '⋀'
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        return all(formula.evaluate(valuation) for formula in self.formulae)
+
+
+@dataclass(frozen=True, eq=True)
+class SeqFormula(Formula):
+    formula_sequence: Sequence[Formula] = Field(default_factory=tuple)
+
+    @property
+    def precedence(self) -> float:
+        return 60
+
+    def __str__(self) -> str:
+        if not self.formula_sequence:
+            return "[]"
+        res = f"[{self.formula_sequence[0]}]"
+        for formula in self.formula_sequence[1:]:
+            res += f" {self.connective_symbol} [{formula}]"
+        return res
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise NotImplementedError
+
+
+@dataclass(frozen=True, eq=True)
+class BoxChain(SeqFormula):
+
+    @property
+    def connective_symbol(self) -> str:
+        return '□'
+
+    def evaluate(self, valuation: Optional[Valuation] = None) -> bool:
+        raise TypeError("BoxChain Formulae cannot be evaluated")
+
+
+class Valuation:
+
+    def assignment(self, atom: Atom) -> bool:
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class FrozenValuation(Valuation):
+    mapping: Mapping[Atom, bool] = Field(default_factory=frozendict)
+
+    def assignment(self, atom: Atom) -> bool:
+        return self.mapping.get(atom, False)
+
+
+@dataclass
+class MutableValuation(Valuation):
+    mapping: MutableMapping[Atom, bool] = Field(default_factory=dict)
+
+    def assignment(self, atom: Atom) -> bool:
+        return self.mapping.get(atom, False)
+
+
+def models(formula: Formula, valuation: Optional[Valuation] = None) -> Iterator[Valuation]:
+    raise NotImplementedError
