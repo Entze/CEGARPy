@@ -1,4 +1,4 @@
-from typing import TypeAlias, Set
+from typing import TypeAlias, Set, Any
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
@@ -8,7 +8,7 @@ from cegarpy.atom import Atom
 _Formula: TypeAlias = 'Formula'
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Formula:
 
     @property
@@ -27,8 +27,18 @@ class Formula:
     def connective_symbol(self) -> str:
         return NotImplemented
 
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, Formula):
+            raise TypeError(f"Cannot compare Formula to type {type(other).__name__}")
+        return self.precedence < other.precedence
 
-@dataclass(frozen=True)
+    def __gt__(self, other: Any) -> bool:
+        if not isinstance(other, Formula):
+            raise TypeError(f"Cannot compare Formula to type {type(other).__name__}")
+        return self.precedence > other.precedence
+
+
+@dataclass(frozen=True, eq=True)
 class NonaryFormula(Formula):
 
     @property
@@ -36,7 +46,7 @@ class NonaryFormula(Formula):
         return 30
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True, eq=True)
 class AtomicFormula(NonaryFormula):
     atom: Atom
 
@@ -47,7 +57,7 @@ class AtomicFormula(NonaryFormula):
 _Literal: TypeAlias = 'Literal'
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Literal(NonaryFormula):
     atom: Atom
     sign: bool = Field(default=True)
@@ -61,7 +71,7 @@ class Literal(NonaryFormula):
         return Literal(self.atom, not self.sign)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Bot(NonaryFormula):
 
     @property
@@ -72,7 +82,7 @@ class Bot(NonaryFormula):
         return '⊥'
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Top(Formula):
 
     @property
@@ -83,7 +93,7 @@ class Top(Formula):
         return '⊤'
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class UnaryFormula(Formula):
     formula: Formula
 
@@ -101,7 +111,7 @@ class UnaryFormula(Formula):
         return f"{self.connective_symbol}{self.formula}"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Negation(UnaryFormula):
 
     @property
@@ -117,7 +127,7 @@ class Negation(UnaryFormula):
         return '¬'
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Box(UnaryFormula):
 
     @property
@@ -129,7 +139,7 @@ class Box(UnaryFormula):
         return '□'
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class Dia(UnaryFormula):
 
     @property
@@ -141,7 +151,7 @@ class Dia(UnaryFormula):
         return '⋄'
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True, eq=True)
 class BinaryFormula(Formula):
     left: Formula
     right: Formula
@@ -167,7 +177,7 @@ class BinaryFormula(Formula):
         return f"{left} {self.connective_symbol} {right}"
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True, eq=True)
 class Conjunction(BinaryFormula):
 
     @property
@@ -179,7 +189,7 @@ class Conjunction(BinaryFormula):
         return '⋀'
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True, eq=True)
 class Disjunction(BinaryFormula):
 
     @property
@@ -191,7 +201,7 @@ class Disjunction(BinaryFormula):
         return '⋁'
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True, eq=True)
 class Implication(BinaryFormula):
 
     @property
@@ -207,7 +217,7 @@ class Implication(BinaryFormula):
         return '→'
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True, eq=True)
 class Equivalence(BinaryFormula):
 
     @property
